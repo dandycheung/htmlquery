@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/antchfx/xpath"
 	"golang.org/x/net/html"
@@ -67,6 +68,28 @@ func TestSelectorCache(t *testing.T) {
 	}
 	getQuery("//a[position()=3]")
 
+}
+
+func TestLoadURLWithClient(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, htmlSample)
+	}))
+	defer ts.Close()
+	cases := []struct {
+		Name string
+		Client *http.Client
+	}{
+		{Name: "Client nil", Client: nil},
+		{Name: "Client Custom", Client: &http.Client{Timeout: 10 * time.Second}},
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			_, err := LoadURLWithClient(ts.URL, c.Client)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }
 
 func TestLoadURL(t *testing.T) {
